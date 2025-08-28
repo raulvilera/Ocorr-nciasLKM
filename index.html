@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistema de Registro de Ocorrências</title>
+  <style>
+    /* Reset e Base */
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background-color: #f8fafc;
+        color: #334155;
+        line-height: 1.6;
+    }
+
+    .container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        min-height: 100vh;
+    }
+
+    /* Header */
+    .header {
+        text-align: center;
+        margin-bottom: 2rem;
+        padding: 2rem 0;
+    }
+
+    .header h1 {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin-bottom: 0.5rem;
+    }
+
+    /* Mensagens */
+    .success-message, .error-message {
+        padding: 1rem;
+        margin-bottom: 1rem;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+    }
+
+    .success-message {
+        background: #dcfce7;
+        color: #166534;
+        border: 1px solid #22c55e;
+    }
+
+    .error-message {
+        background: #fee2e2;
+        color: #991b1b;
+        border: 1px solid #ef4444;
+    }
+
+    .hidden { display: none; }
+
+    /* Formulário */
+    .form {
+        background: white;
+        padding: 2rem;
+        border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        border: 1px solid #e2e8f0;
+    }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-group label {
+        display: block;
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 0.5rem;
+    }
+
+    /* Inputs */
+    input, select, textarea {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 1rem;
+        transition: all 0.2s ease;
+    }
+
+    input:focus, select:focus, textarea:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    /* Botão Submit */
+    .submit-btn {
+        width: 100%;
+        background-color: #1f2937;
+        color: white;
+        padding: 1rem 2rem;
+        border: none;
+        border-radius: 8px;
+        font-size: 1.1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .submit-btn:hover {
+        background-color: #111827;
+        transform: translateY(-1px);
+    }
+
+    /* Responsividade */
+    @media (max-width: 768px) {
+        .container { padding: 15px; }
+        .header h1 { font-size: 2rem; }
+        .form { padding: 1.5rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <h1>Sistema de Registro de Ocorrências</h1>
+      <p>Registre ocorrências disciplinares dos alunos</p>
+    </header>
+
+    <!-- Mensagens de Feedback -->
+    <div id="successMessage" class="success-message hidden">
+      <span class="success-icon">✓</span>
+      Ocorrência registrada com sucesso!
+    </div>
+    <div id="errorMessage" class="error-message hidden">
+      <span class="error-icon">✗</span>
+      <span id="errorText">Erro ao registrar ocorrência</span>
+    </div>
+
+    <!-- Formulário Principal -->
+    <form id="ocorrenciaForm" class="form">
+      <!-- Data do Registro -->
+      <div class="form-group">
+        <label for="dataRegistro">Data do Registro</label>
+        <input type="date" id="dataRegistro" name="dataRegistro" required>
+      </div>
+
+      <!-- Série/Sala -->
+      <div class="form-group">
+        <label for="serieSala">Série/Sala</label>
+        <select id="serieSala" name="serieSala" required>
+          <option value="">Selecione a sala</option>
+          <option value="6° ANO A MANHA">6° ANO A MANHÃ</option>
+          <option value="6° ANO B MANHA">6° ANO B MANHÃ</option>
+          <!-- demais opções -->
+        </select>
+      </div>
+
+      <!-- Série (auto-preenchida) -->
+      <div class="form-group">
+        <label for="serie">Série</label>
+        <input type="text" id="serie" name="serie" readonly>
+      </div>
+
+      <!-- Nome do Aluno -->
+      <div class="form-group">
+        <label for="nomeAluno">Nome do Aluno</label>
+        <select id="nomeAluno" name="nomeAluno" required disabled>
+          <option value="">Selecione primeiro a sala</option>
+        </select>
+        <div id="loadingAlunos" class="loading hidden">Carregando alunos...</div>
+      </div>
+
+      <!-- Professor -->
+      <div class="form-group">
+        <label for="professor">Professor</label>
+        <select id="professor" name="professor" required>
+          <option value="">Selecione o professor</option>
+          <option value="Prof. João">Prof. João</option>
+          <option value="Prof. Maria">Prof. Maria</option>
+          <!-- + outros -->
+        </select>
+      </div>
+
+      <!-- Descrição da Ocorrência -->
+      <div class="form-group">
+        <label for="descricaoOcorrencia">Descrição da Ocorrência</label>
+        <textarea id="descricaoOcorrencia" name="descricaoOcorrencia" rows="4"
+          placeholder="Descreva detalhadamente a ocorrência..." required></textarea>
+      </div>
+
+      <!-- Irregularidades -->
+      <div class="form-group">
+        <label>Irregularidades (opcional)</label>
+        <div class="checkbox-grid">
+          <label class="checkbox-item">
+            <input type="checkbox" name="irregularidades" value="Não fez a lição">
+            Não fez a lição
+          </label>
+        </div>
+      </div>
+
+      <!-- Botão de Submit -->
+      <button type="submit" id="submitBtn" class="submit-btn">
+        <span id="submitText">Registrar Ocorrência</span>
+      </button>
+    </form>
+  </div>
+
+  <script>
+    // Configurações
+    const CONFIG = {
+      APPS_SCRIPT_URL: 'https://script.google.com/macros/s/SEU_SCRIPT_ID/exec',
+      SALA_INTERVALS: {
+        "6° ANO A MANHA": "C3:C46",
+        "6° ANO B MANHA": "D3:D46"
+        // ... demais salas
+      }
+    };
+
+    const elements = {
+      form: document.getElementById('ocorrenciaForm'),
+      serieSala: document.getElementById('serieSala'),
+      nomeAluno: document.getElementById('nomeAluno'),
+      serie: document.getElementById('serie'),
+      successMessage: document.getElementById('successMessage'),
+      errorMessage: document.getElementById('errorMessage'),
+      errorText: document.getElementById('errorText')
+    };
+
+    document.addEventListener('DOMContentLoaded', () => {
+      elements.serieSala.addEventListener('change', handleSalaChange);
+      elements.form.addEventListener('submit', handleFormSubmit);
+    });
+
+    async function handleSalaChange() {
+      const sala = elements.serieSala.value;
+      elements.serie.value = sala.split(" ")[0]; // pega só o "6°" ou "7°"
+      if (!sala) return;
+
+      try {
+        const alunos = await fetchAlunos(sala);
+        populateAlunoSelect(alunos);
+      } catch (err) {
+        showError("Erro ao carregar alunos");
+      }
+    }
+
+    async function fetchAlunos(sala) {
+      const interval = CONFIG.SALA_INTERVALS[sala];
+      const response = await fetch(
+        `${CONFIG.APPS_SCRIPT_URL}?action=getAlunos&sala=${sala}&interval=${interval}`
+      );
+      const data = await response.json();
+      return data.alunos || [];
+    }
+
+    function populateAlunoSelect(alunos) {
+      elements.nomeAluno.innerHTML = '<option value="">Selecione o aluno</option>';
+      alunos.forEach(aluno => {
+        const opt = document.createElement('option');
+        opt.value = aluno;
+        opt.textContent = aluno;
+        elements.nomeAluno.appendChild(opt);
+      });
+      elements.nomeAluno.disabled = false;
+    }
+
+    async function handleFormSubmit(e) {
+      e.preventDefault();
+      const formData = Object.fromEntries(new FormData(elements.form).entries());
+
+      try {
+        const response = await fetch(CONFIG.APPS_SCRIPT_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "registrarOcorrencia", ...formData })
+        });
+        const result = await response.json();
+        if (result.error) throw new Error(result.error);
+        showSuccess();
+        elements.form.reset();
+      } catch (err) {
+        showError("Erro ao registrar ocorrência");
+      }
+    }
+
+    function showSuccess() {
+      elements.successMessage.classList.remove("hidden");
+      elements.errorMessage.classList.add("hidden");
+    }
+
+    function showError(msg) {
+      elements.errorText.textContent = msg;
+      elements.errorMessage.classList.remove("hidden");
+      elements.successMessage.classList.add("hidden");
+    }
+  </script>
+</body>
+</html>
